@@ -1,0 +1,37 @@
+version: '3.9'
+
+services:
+  # FastAPI
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: nexusdemand_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+  
+  # Streamlit Frontend
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    container_name: nexusdemand_dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
